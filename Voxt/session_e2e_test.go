@@ -453,6 +453,24 @@ func TestSessionStopHotkeyKeepsStartMode(t *testing.T) {
 	if es := a.history(); len(es) != 1 || es[0].Kind != store.KindTranslate {
 		t.Errorf("history %+v", es)
 	}
+
+	history := a.lib.store.History()
+	for kind, want := range map[store.Kind]int{store.KindTranslate: 1, store.KindTranscribe: 0} {
+		entries, err := history.List(t.Context(), store.HistoryQuery{Kind: kind})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != want {
+			t.Errorf("History %s has %d entries, want %d", kind, len(entries), want)
+		}
+	}
+	stats, _, err := readHome(t.Context(), history, end.StartedAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.byKind[store.KindTranslate] != 1 || stats.byKind[store.KindTranscribe] != 0 {
+		t.Errorf("Home counts by kind: %v", stats.byKind)
+	}
 }
 
 // TestSessionInputSwitches: the chosen microphone goes away after three
